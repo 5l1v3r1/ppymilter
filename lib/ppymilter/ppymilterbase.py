@@ -273,13 +273,17 @@ class PpyMilterDispatcher(object):
         cmd: The single character command code representing this command.
         hostname: The hostname that originated the connection to the MTA.
         family: Address family for connection (see sendmail libmilter/mfdef.h).
-        port: The network port if appropriate for the connection.
-        address: Remote address of the connection (e.g. IP address).
+        port: The network port if appropriate for the connection or None
+        address: Remote address of the connection (e.g. IP address) if available or None
     """
     (hostname, data) = data.split('\0', 1)
     family = struct.unpack('c', data[0])[0]
-    port = struct.unpack('!H', data[1:3])[0]
-    address = data[3:]
+    if family in ('4','6'): # SMFIA_INET / SMFIA_INET6
+        port = struct.unpack('!H', data[1:3])[0]
+        address = data[3:]
+    else: # SMFIA_UNKNOWN / SMFIA_UNIX
+        port = None
+        address = None
     return (cmd, hostname, family, port, address)
 
   def _ParseHelo(self, cmd, data):
